@@ -1,13 +1,43 @@
-# Use the latest 2.1 version of CircleCI pipeline process engine. See: https://circleci.com/docs/2.0/configuration-reference
 version: 2.1
-# Use a package of configuration called an orb.
-orbs:
-  # Declare a dependency on the welcome-orb
-  welcome: circleci/welcome-orb@0.4.1
-# Orchestrate or schedule a set of jobs
+jobs:
+  build:
+    docker:
+      - image: fr3akyphantom/droid-builder:latest
+    environment:
+      MANIFEST_BRANCH: 'android-9.0'
+      VERSION: '3.0.0'
+      MAINTAINER: '@TechyMinati'
+      VENDOR: 'realme'
+      CODENAME: 'RMX1831'
+      FLAVOR: 'eng'
+      #TEST_BUILD: 'true'
+      PB_OFFICIAL: 'true'
+      CHANGELOG: |
+        - Initial Build
+    working_directory: /home/builder/pitchblack
+    steps:
+      - run:
+          name: AIO Build
+          command: |
+            lshw -short
+            df -h 
+            echo "=============================================================="
+           sudo apt-get -y update && sudo apt-get -y install git openjdk-8-jdk wget p7zip-full p7zip-rar python python3 rsync sshpass adb autoconf automake axel bc bison build-essential ccache clang cmake expat fastboot flex g++ g++-multilib gawk gcc gcc-multilib git gnupg gperf htop imagemagick lib32ncurses5-dev lib32z1-dev libtinfo5 libc6-dev libcap-dev libexpat1-dev libgmp-dev '^liblz4-.*' '^liblzma.*' libmpc-dev libmpfr-dev libncurses5-dev libsdl1.2-dev libssl-dev libtool libxml2 libxml2-utils '^lzma.*' lzop maven ncftp ncurses-dev patch patchelf pkg-config pngcrush pngquant python2.7 python-all-dev re2c schedtool squashfs-tools subversion texinfo unzip w3m xsltproc zip zlib1g-dev lzip libxml-simple-perl apt-utils 
+           sudo curl --create-dirs -L -o /usr/local/bin/repo -O -L https://storage.googleapis.com/git-repo-downloads/repo
+           sudo chmod a+rx /usr/local/bin/repo
+           mkdir stuff &&cd stuff
+           repo init -u git://github.com/LineageOS/android.git -b lineage-18.0 --depth=1 --groups=all,-notdefault,-device,-darwin,-x86,-mips
+           repo sync --force-sync -j69
+           git clone --depth=1 --single-branch https://github.com/Pulkit077/device_xiaomi_rosy device/xiaomi/rosy
+           git clone --depth=1 --single-branch https://github.com/Pulkit077/vendor_xiaomi_rosy vendor/xiaomi/rosy
+           git clone --depth=1 --single-branch https://github.com/Pulkit077/kernel_xiaomi_rosy kenrel/xiaomi/rosy 
+           . build/envsetup.sh &&brunch rosy
 workflows:
-  # Name the workflow "welcome"
-  welcome:
-    # Run the welcome/run job in its own container
+  version: 2.1
+  build_and_test:
     jobs:
-      - welcome/run
+      - build:
+          filters:
+            branches:
+              only: 'android-9.0'
+          context: org-global
